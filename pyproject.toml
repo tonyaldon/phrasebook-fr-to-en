@@ -1,0 +1,66 @@
+[project]
+name = "phrasebook-fr-to-en"
+version = "0.1.0" # When you update here, also update __version__ in `cli.py`
+description = "Enrich French to English phrasebooks with OpenAI API."
+readme = "README.md"
+authors = [
+    { name = "Tony Aldon", email = "tony@tonyaldon.com" }
+]
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.3.3",
+    "numpy!=2.4.0",
+    "typer>=0.21.0",
+    "watchdog>=6.0.0",
+    "openai>=2.15.0",
+    "pydantic>=2.12.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/tonyaldon/phrasebook-fr-to-en"
+Repository = "https://github.com/tonyaldon/phrasebook-fr-to-en"
+
+[project.scripts]
+phrasebook-fr-to-en = "phrasebook_fr_to_en.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.13.1",
+    "mutagen>=1.47.0",
+    "pillow>=12.1.0",
+    "pytest>=9.0.2",
+    "python-dotenv>=1.2.1",
+    "respx>=0.22.0",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+parallel = false
+omit = [
+    "src/phrasebook_fr_to_en/__main__.py",
+]
+
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
+
+[tool.coverage.html]
+directory = "htmlcov"
