@@ -731,26 +731,33 @@ def test_generate_translations(
     record = ("2025-12-15", "fr1", "en1")
     client = OpenAI(api_key="foo-api-key")
 
+    def partial_json_response(output_id: str, output_text: str):
+        return {
+            "output": [
+                {
+                    "type": "message",
+                    "id": f"msg_{output_id}",
+                    "status": "completed",
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": output_text,
+                            "annotations": [],
+                        }
+                    ],
+                }
+            ]
+        }
+
+    # We receive exactly 2 translations and this is what we want
     respx_mock.post("/responses").mock(
         return_value=httpx.Response(
             200,
-            json={
-                "output": [
-                    {
-                        "type": "message",
-                        "id": "msg_67ccd3acc8d48190a77525dc6de64b4104becb25c45c1d41",
-                        "status": "completed",
-                        "role": "assistant",
-                        "content": [
-                            {
-                                "type": "output_text",
-                                "text": '{"translations":[{"french":"fr2","english":"en2"},{"french":"fr3","english":"en3"}]}',
-                                "annotations": [],
-                            }
-                        ],
-                    }
-                ]
-            },
+            json=partial_json_response(
+                "id_1",
+                '{"translations":[{"french":"fr2","english":"en2"},{"french":"fr3","english":"en3"}]}',
+            ),
         )
     )
 
@@ -766,34 +773,94 @@ def test_generate_translations(
     assert "using model gpt-5.2 and input 'fr1 -> en1'" in caplog.text
     caplog.clear()
 
-    # Raise an error because we receive only one translation pair
+    # First request returns 3 translations -> We take the first 2
+    # Second request would return 2 translations, which is ok, but we
+    # never send that second request because we stopped at the first one.
+    respx_mock.post("/responses").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=partial_json_response(
+                    "id_1",
+                    '{"translations":[{"french":"fr2","english":"en2"},{"french":"fr3","english":"en3"}, {"french":"fr4","english":"en4"}]}',
+                ),
+            ),
+            httpx.Response(
+                200,
+                json=partial_json_response(
+                    "id_2",
+                    '{"translations":[{"french":"frA","english":"enA"},{"french":"frB","english":"enB"}]}',
+                ),
+            ),
+        ]
+    )
+
+    translations = cli.generate_translations(record, client)
+
+    assert translations == [("fr2", "en2"), ("fr3", "en3")]
+
+    # 3 retries with the 3rd OK
+    # First request returns 1 translation -> should be 2 so we retry
+    # Second request returns no translation -> should be 2 so we retry
+    # Third request returns 2 translations -> this is ok
+    respx_mock.post("/responses").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=partial_json_response(
+                    "id_1",
+                    '{"translations":[{"french":"fr2","english":"en2"}]}',
+                ),
+            ),
+            httpx.Response(
+                200,
+                json={
+                    "incomplete_details": {"reason": "max_output_tokens"},
+                    "output": [
+                        {
+                            "id": "rs_0c8b0343bd64d781006971f5c6041c8194b28661972de6acc2",
+                            "summary": [],
+                            "type": "reasoning",
+                        }
+                    ],
+                },
+            ),
+            httpx.Response(
+                200,
+                json=partial_json_response(
+                    "id_2",
+                    '{"translations":[{"french":"fr2","english":"en2"},{"french":"fr3","english":"en3"}]}',
+                ),
+            ),
+        ]
+    )
+
+    translations = cli.generate_translations(record, client)
+
+    assert translations == [("fr2", "en2"), ("fr3", "en3")]
+    assert "No translations were returned by the model at attempt 2." in caplog.text
+    assert (
+        "Wrong number of translations returned by the model at attempt 1."
+        in caplog.text
+    )
+
+    # Raise an error because we receive only one translation pair each
+    # time we do a request to the API (at the 3rd attempt we raise an error)
     respx_mock.post("/responses").mock(
         return_value=httpx.Response(
             200,
-            json={
-                "output": [
-                    {
-                        "type": "message",
-                        "id": "msg_67ccd3acc8d48190a77525dc6de64b4104becb25c45c1d41",
-                        "status": "completed",
-                        "role": "assistant",
-                        "content": [
-                            {
-                                "type": "output_text",
-                                "text": '{"translations":[{"french":"fr2","english":"en2"}]}',
-                                "annotations": [],
-                            }
-                        ],
-                    }
-                ]
-            },
-        )
+            json=partial_json_response(
+                "id_1",
+                '{"translations":[{"french":"fr2","english":"en2"}]}',
+            ),
+        ),
     )
 
     with pytest.raises(ValueError, match="Wrong number of translations: 1."):
         translations = cli.generate_translations(record, client)
 
-    # Raise an error because we receive no translation pair
+    # Raise an error because we receive no translation pair each time we
+    # do a request to the API (at the 3rd attempt we raise an error)
     # This can happens if you use for instance gpt-5-nano with
     # a limited amount output token that entirely consumed by the
     # reasoning.

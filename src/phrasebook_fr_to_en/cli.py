@@ -148,38 +148,57 @@ You are a bilingual (French/English) teacher specializing in practical language 
 
     logger.info(f"Generating translations for record {record_original}")
 
-    with log_request_info_when_api_error_raised():
-        response = client.responses.parse(
-            model=model,
-            instructions=instructions,
-            input=input_msg,
-            text_format=Translations,
-            max_output_tokens=256,
-        )
+    attempt = 1
+    translations = []
 
-    # If we decided to use gpt-5-nano with the same low max_output_tokens,
-    # tokens would be consumed by the reasoning, we would get
-    # no text output, and this would result in output_parsed being None.
-    if not response.output_parsed:
-        raise ValueError(
-            f"No translations were returned by the model.\nResponse: {response.to_json()}"
-        )
-
-    translations = response.output_parsed.translations
-
-    if (tlen := len(translations)) != 2:
-        raise ValueError(
-            (
-                f"Wrong number of translations: {tlen}.  2 were expected.\n"
-                f"Response: {response.to_json()}"
+    while not translations:
+        with log_request_info_when_api_error_raised():
+            response = client.responses.parse(
+                model=model,
+                instructions=instructions,
+                input=input_msg,
+                text_format=Translations,
+                max_output_tokens=256,
             )
-        )
+
+        # If we decided to use gpt-5-nano with the same low max_output_tokens,
+        # tokens would be consumed by the reasoning, we would get
+        # no text output, and this would result in output_parsed being None.
+        if not response.output_parsed:
+            if attempt < 3:
+                logger.info(
+                    f"No translations were returned by the model at attempt {attempt}."
+                )
+                attempt += 1
+                continue
+            else:
+                raise ValueError(
+                    f"No translations were returned by the model.\nResponse: {response.to_json()}"
+                )
+
+        translations = response.output_parsed.translations
+
+        if (tlen := len(translations)) < 2:
+            if attempt < 3:
+                logger.info(
+                    f"Wrong number of translations returned by the model at attempt {attempt}."
+                )
+                attempt += 1
+                translations = []
+                continue
+            else:
+                raise ValueError(
+                    (
+                        f"Wrong number of translations: {tlen}.  2 were expected.\n"
+                        f"Response: {response.to_json()}"
+                    )
+                )
 
     logger.info(
         f"Translations generated for record {record_original} using model {model} and input '{input_msg}'"
     )
 
-    return [(t.french, t.english) for t in translations]
+    return [(t.french, t.english) for t in translations][:2]
 
 
 def generate_audio(record: dict[str, Any], media_dir: Path, client: OpenAI) -> None:
