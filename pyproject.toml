@@ -1,6 +1,6 @@
 [project]
 name = "phrasebook-fr-to-en"
-version = "0.2.0" # When you update here, also update __version__ in `cli.py`
+version = "0.3.0" # When you update here, also update __version__ in `cli.py`
 description = "Enrich French to English phrasebooks with OpenAI API."
 readme = "README.md"
 authors = [
