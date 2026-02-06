@@ -92,10 +92,11 @@ the original phrasebook file.
 For instance, if `my-phrasebook.tsv` contains the following record
 (columns separated by tabs)
 
-```
-date	french	english
-2025-11-15	Montez les escaliers.	Climb the stairs.
-```
+
+|date|french|english|
+|-----|-----|-----|
+|2025-11-15|Montez les escaliers.|Climb the stairs.|
+
 
 and you run the following commands:
 
@@ -109,12 +110,11 @@ translations.  It has the following columns: `french`, `english`,
 `anki_audio`, `anki_img`, `generated_from`, `id`, `audio_filename`,
 `img_filename`, `date`.
 
-```
-french	english	anki_audio	anki_img	generated_from	id	audio_filename	img_filename	date
-Montez les escaliers.	Climb the stairs.	[sound:phrasebook-fr-to-en-1.mp3]	"<img src=""phrasebook-fr-to-en-1.png"">"		1	phrasebook-fr-to-en-1.mp3	phrasebook-fr-to-en-1.png	2025-11-15
-Montez les escaliers jusqu’au premier étage.	Climb the stairs up to the first floor.	[sound:phrasebook-fr-to-en-2.mp3]	"<img src=""phrasebook-fr-to-en-2.png"">"	1	2	phrasebook-fr-to-en-2.mp3	phrasebook-fr-to-en-2.png	2025-11-15
-Prenez les escaliers, c’est juste à gauche.	Take the stairs; it’s just on the left.	[sound:phrasebook-fr-to-en-3.mp3]	"<img src=""phrasebook-fr-to-en-3.png"">"	1	3	phrasebook-fr-to-en-3.mp3	phrasebook-fr-to-en-3.png	2025-11-15
-```
+|french|english|anki_audio|anki_img|generated_from|id|audio_filename|img_filename|date|
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+|Montez les escaliers.|Climb the stairs.|[sound:phrasebook-fr-to-en-1.mp3]|"<img src=""phrasebook-fr-to-en-1.png"">"||1|phrasebook-fr-to-en-1.mp3|phrasebook-fr-to-en-1.png|2025-11-15|
+|Montez les escaliers jusqu’au premier étage.|Climb the stairs up to the first floor.|[sound:phrasebook-fr-to-en-2.mp3]|"<img src=""phrasebook-fr-to-en-2.png"">"|1|2|phrasebook-fr-to-en-2.mp3|phrasebook-fr-to-en-2.png|2025-11-15|
+|Prenez les escaliers, c’est juste à gauche.|Take the stairs; it’s just on the left.|[sound:phrasebook-fr-to-en-3.mp3]|"<img src=""phrasebook-fr-to-en-3.png"">"|1|3|phrasebook-fr-to-en-3.mp3|phrasebook-fr-to-en-3.png|2025-11-15|
 
 This also generates 3 audios and 3 images.
 
